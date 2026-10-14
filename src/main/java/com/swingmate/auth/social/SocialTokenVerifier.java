@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 /**
  * 앱이 받은 소셜 토큰을 공급자 서버에 확인한다.
@@ -25,9 +26,9 @@ public class SocialTokenVerifier {
     private final OAuthProperties properties;
     private final RestClient restClient;
 
-    public SocialTokenVerifier(OAuthProperties properties, RestClient.Builder restClientBuilder) {
+    public SocialTokenVerifier(OAuthProperties properties, RestClient socialRestClient) {
         this.properties = properties;
-        this.restClient = restClientBuilder.build();
+        this.restClient = socialRestClient;
     }
 
     public SocialUserInfo verify(SocialProvider provider, String token) {
@@ -42,6 +43,10 @@ public class SocialTokenVerifier {
             };
         } catch (HttpClientErrorException e) {
             throw invalid();
+        } catch (RestClientException e) {
+            // 공급자 서버 장애·타임아웃. 토큰은 로그에 남기지 않는다.
+            log.warn("{} 토큰 확인 실패: {}", provider, e.getClass().getSimpleName());
+            throw new ApiException(ErrorCode.SOCIAL_PROVIDER_UNAVAILABLE);
         }
     }
 

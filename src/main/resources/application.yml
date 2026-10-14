@@ -5,6 +5,10 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/swingmate}
     username: ${DB_USERNAME:swingmate}
     password: ${DB_PASSWORD:swingmate}
+    hikari:
+      data-source-properties:
+        # 유니크 제약 위반 시 PostgreSQL 오류 상세(휴대폰 번호 등 실제 값)가 로그에 찍히지 않게 한다.
+        logServerErrorDetail: false
   jpa:
     hibernate:
       ddl-auto: validate
