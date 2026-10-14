@@ -6,5 +6,7 @@ public enum TokenType {
     /** 액세스 토큰 재발급 전용 토큰 */
     REFRESH,
     /** 가입 미완료 사용자의 온보딩 API 전용 토큰 */
-    ONBOARDING
+    ONBOARDING,
+    /** SMS 인증 성공 증명. 온보딩 완료 요청에만 사용한다. */
+    PHONE_VERIFICATION
 }

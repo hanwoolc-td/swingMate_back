@@ -8,6 +8,7 @@ public record JwtProperties(
         String secret,
         Duration accessTokenValidity,
         Duration refreshTokenValidity,
-        Duration onboardingTokenValidity
+        Duration onboardingTokenValidity,
+        Duration verificationTokenValidity
 ) {
 }

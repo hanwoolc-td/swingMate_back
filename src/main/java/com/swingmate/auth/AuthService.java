@@ -83,7 +83,7 @@ public class AuthService {
         return user;
     }
 
-    private TokenResponse issueTokens(UUID userId) {
+    public TokenResponse issueTokens(UUID userId) {
         UUID tokenId = UUID.randomUUID();
         refreshTokenRepository.save(new RefreshToken(tokenId, userId, tokenProvider.refreshTokenExpiresAt()));
         return new TokenResponse(tokenProvider.createAccessToken(userId),

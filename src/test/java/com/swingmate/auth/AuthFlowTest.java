@@ -123,7 +123,7 @@ class AuthFlowTest {
                 .content(body("refreshToken", refreshToken)));
     }
 
-    /** 온보딩 완료 API가 아직 없어서 DB를 직접 갱신한다. */
+    /** 토큰 흐름만 검증하려고 SMS·온보딩 절차 대신 DB를 직접 갱신한다. */
     private void completeOnboarding(JsonNode loginResponse) throws Exception {
         String token = loginResponse.path("onboardingToken").asText();
         String userId = json(mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + token)))

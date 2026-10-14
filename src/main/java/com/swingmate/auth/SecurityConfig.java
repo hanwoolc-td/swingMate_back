@@ -31,7 +31,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                         .permitAll()
-                        .requestMatchers("/api/v1/onboarding/**").hasAuthority(ONBOARDING_AUTHORITY)
+                        .requestMatchers("/api/v1/onboarding/**", "/api/v1/phone-verifications/**")
+                        .hasAuthority(ONBOARDING_AUTHORITY)
                         .requestMatchers("/api/v1/users/me").hasAnyAuthority(ACCESS_AUTHORITY, ONBOARDING_AUTHORITY)
                         .anyRequest().hasAuthority(ACCESS_AUTHORITY))
                 .exceptionHandling(e -> e

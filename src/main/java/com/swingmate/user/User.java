@@ -54,6 +54,14 @@ public class User {
         this.role = role;
     }
 
+    public void completeOnboarding(Role role, String name, String phoneNumber, Instant phoneVerifiedAt) {
+        this.role = role;
+        this.name = name;
+        this.phoneNumber = phoneNumber;
+        this.phoneVerifiedAt = phoneVerifiedAt;
+        this.onboardingStatus = OnboardingStatus.COMPLETED;
+    }
+
     @PrePersist
     void onCreate() {
         createdAt = Instant.now();
