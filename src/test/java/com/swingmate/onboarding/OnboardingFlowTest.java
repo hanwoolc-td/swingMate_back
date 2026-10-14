@@ -145,6 +145,14 @@ class OnboardingFlowTest {
         put("/api/v1/onboarding/member", token, Map.of("verificationToken", verification, "name", "홍길동",
                 "phoneNumber", phone, "lessonInterests", List.of("IRON")))
                 .andExpect(jsonPath("$.code").value("GOLF_EXPERIENCE_REQUIRED"));
+        // 관심 분야 필드를 아예 빼도 500이 아니라 400이다.
+        put("/api/v1/onboarding/member", token, Map.of("verificationToken", verification, "name", "홍길동",
+                "phoneNumber", phone, "golfExperience", "UNDER_6_MONTHS"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("LESSON_INTEREST_REQUIRED"));
+        put("/api/v1/onboarding/member", token, Map.of("verificationToken", verification, "name", "가".repeat(51),
+                "phoneNumber", phone))
+                .andExpect(jsonPath("$.code").value("NAME_INVALID"));
         put("/api/v1/onboarding/member", token, Map.of("verificationToken", verification, "name", "홍1",
                 "phoneNumber", phone))
                 .andExpect(jsonPath("$.code").value("NAME_INVALID"));
@@ -164,6 +172,9 @@ class OnboardingFlowTest {
         put("/api/v1/onboarding/pro", token, with(pro, "introduction", "가".repeat(201)))
                 .andExpect(jsonPath("$.code").value("PRO_INTRODUCTION_REQUIRED"));
         put("/api/v1/onboarding/pro", token, with(pro, "careers", List.of()))
+                .andExpect(jsonPath("$.code").value("PRO_CAREER_REQUIRED"));
+        put("/api/v1/onboarding/pro", token, with(pro, "careers", List.of("가".repeat(201))))
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("PRO_CAREER_REQUIRED"));
         for (Object availability : List.of(
                 List.of(),

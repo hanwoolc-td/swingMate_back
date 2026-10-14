@@ -56,6 +56,11 @@ class AuthFlowTest {
         mvc.perform(get("/api/v1/something-else").header("Authorization", "Bearer " + onboardingToken))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        mvc.perform(post("/api/v1/phone-verifications/not-a-uuid/confirm")
+                        .header("Authorization", "Bearer " + onboardingToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"code\":\"123456\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
 
         // 같은 계정으로 다시 로그인하면 기존 사용자다.
         login("KAKAO", kakaoId).andExpect(jsonPath("$.isNewUser").value(false));
@@ -83,6 +88,9 @@ class AuthFlowTest {
         mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.onboardingStatus").value("COMPLETED"));
+        mvc.perform(get("/api/v1/no-such-api").header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("NOT_FOUND"));
         // 액세스 토큰으로 온보딩 API는 호출할 수 없다.
         mvc.perform(patch("/api/v1/onboarding/role").header("Authorization", "Bearer " + accessToken)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"role\":\"MEMBER\"}"))
@@ -107,6 +115,10 @@ class AuthFlowTest {
                 .andExpect(jsonPath("$.traceId").exists());
         mvc.perform(get("/api/v1/users/me").header("Authorization", "Bearer not-a-jwt"))
                 .andExpect(status().isUnauthorized());
+        // Spring MVC 예외는 500이 아니라 알맞은 4xx로 내려간다.
+        mvc.perform(get("/api/v1/auth/social/login"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
         mvc.perform(post("/api/v1/auth/social/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"provider\":\"NAVER\",\"idToken\":\"x\"}"))
                 .andExpect(status().isBadRequest())

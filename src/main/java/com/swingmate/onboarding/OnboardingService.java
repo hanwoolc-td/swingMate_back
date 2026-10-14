@@ -43,6 +43,8 @@ public class OnboardingService {
     private static final String PRO_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int PRO_CODE_LENGTH = 6;
     private static final int INTRODUCTION_MAX = 200;
+    private static final int CAREER_MAX = 200;
+    private static final int NAME_MAX = 50;
 
     private final UserRepository userRepository;
     private final MemberProfileRepository memberProfileRepository;
@@ -79,9 +81,10 @@ public class OnboardingService {
         }
         String name = validateName(request.name());
         VerifiedPhone phone = verifiedPhone(userId, request.verificationToken(), request.phoneNumber());
-        Set<LessonInterest> interests = request.lessonInterests() == null
-                ? Set.of() : new HashSet<>(request.lessonInterests());
-        interests.remove(null);
+        Set<LessonInterest> interests = new HashSet<>();
+        if (request.lessonInterests() != null) {
+            request.lessonInterests().stream().filter(Objects::nonNull).forEach(interests::add);
+        }
         if (interests.isEmpty()) {
             throw new ApiException(ErrorCode.LESSON_INTEREST_REQUIRED);
         }
@@ -108,7 +111,7 @@ public class OnboardingService {
         }
         List<String> careers = request.careers() == null ? List.of() : request.careers().stream()
                 .filter(Objects::nonNull).map(String::trim).filter(c -> !c.isEmpty()).toList();
-        if (careers.isEmpty()) {
+        if (careers.isEmpty() || careers.stream().anyMatch(c -> c.length() > CAREER_MAX)) {
             throw new ApiException(ErrorCode.PRO_CAREER_REQUIRED);
         }
         List<AvailabilitySlot> availability = validateAvailability(request.availability());
@@ -156,7 +159,7 @@ public class OnboardingService {
 
     private static String validateName(String raw) {
         String name = raw == null ? "" : raw.trim();
-        if (!NAME.matcher(name).matches() || name.replace(" ", "").length() < 2) {
+        if (!NAME.matcher(name).matches() || name.replace(" ", "").length() < 2 || name.length() > NAME_MAX) {
             throw new ApiException(ErrorCode.NAME_INVALID);
         }
         return name;
