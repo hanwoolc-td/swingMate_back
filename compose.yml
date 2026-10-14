@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: swingmate
+      POSTGRES_USER: swingmate
+      POSTGRES_PASSWORD: swingmate
+    ports:
+      - "5432:5432"
+    volumes:
+      - swingmate-db:/var/lib/postgresql/data
+
+volumes:
+  swingmate-db:
