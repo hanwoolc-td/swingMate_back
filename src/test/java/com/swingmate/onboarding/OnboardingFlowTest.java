@@ -52,6 +52,10 @@ class OnboardingFlowTest {
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.proCode").isString()));
         String proCode = pro.path("proCode").asText();
+        // 프로는 나중에 내 정보에서 코드를 다시 볼 수 있다.
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + pro.path("accessToken").asText()))
+                .andExpect(jsonPath("$.proCode").value(proCode));
 
         // 회원 가입 (하이픈 포함 번호도 같은 번호로 취급)
         String memberToken = onboardingToken();
@@ -67,7 +71,8 @@ class OnboardingFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.user.role").value("MEMBER"))
                 .andExpect(jsonPath("$.user.phoneNumber").value(memberPhone))
-                .andExpect(jsonPath("$.proCode").doesNotExist()));
+                .andExpect(jsonPath("$.proCode").doesNotExist())
+                .andExpect(jsonPath("$.user.proCode").doesNotExist()));
         // 같은 요청 재시도는 성공하고 토큰만 새로 나온다.
         put("/api/v1/onboarding/member", memberToken, memberBody).andExpect(status().isOk());
 

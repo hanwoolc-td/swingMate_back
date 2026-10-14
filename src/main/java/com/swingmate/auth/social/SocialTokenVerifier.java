@@ -29,6 +29,9 @@ public class SocialTokenVerifier {
     public SocialTokenVerifier(OAuthProperties properties, RestClient socialRestClient) {
         this.properties = properties;
         this.restClient = socialRestClient;
+        if (properties.mockEnabled()) {
+            log.warn("oauth.mock-enabled=true: 소셜 토큰을 확인하지 않습니다. 누구나 아무 계정으로 로그인할 수 있으니 운영에서는 절대 켜지 마세요.");
+        }
     }
 
     public SocialUserInfo verify(SocialProvider provider, String token) {
