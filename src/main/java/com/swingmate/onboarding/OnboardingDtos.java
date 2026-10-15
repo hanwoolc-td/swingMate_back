@@ -38,6 +38,6 @@ public final class OnboardingDtos {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record OnboardingResponse(UserResponse user, String accessToken, String refreshToken, String proCode) {
+    public record OnboardingResponse(UserResponse user, String accessToken, String refreshToken) {
     }
 }

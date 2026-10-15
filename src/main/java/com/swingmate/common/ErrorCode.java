@@ -30,8 +30,11 @@ public enum ErrorCode {
     PRO_INTRODUCTION_REQUIRED(HttpStatus.BAD_REQUEST, "프로 소개를 1~200자로 입력해 주세요."),
     PRO_CAREER_REQUIRED(HttpStatus.BAD_REQUEST, "경력을 한 개 이상, 각 200자 이내로 입력해 주세요."),
     AVAILABILITY_INVALID(HttpStatus.BAD_REQUEST, "레슨 가능 시간이 올바르지 않습니다."),
-    PRO_CODE_NOT_FOUND(HttpStatus.NOT_FOUND, "프로 코드를 찾을 수 없습니다."),
-    PRO_CONNECTION_NOT_ALLOWED(HttpStatus.CONFLICT, "프로와 연결할 수 없는 상태입니다."),
+    ROLE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "이 역할로는 사용할 수 없는 기능입니다."),
+    CONNECTION_CODE_INVALID(HttpStatus.NOT_FOUND, "연결 코드가 없거나 만료되었습니다. 회원에게 새 코드를 받아 주세요."),
+    ALREADY_CONNECTED(HttpStatus.CONFLICT, "이미 연결된 회원입니다."),
+    CONNECTION_NOT_FOUND(HttpStatus.NOT_FOUND, "연결 요청을 찾을 수 없습니다."),
+    CONNECTION_NOT_PENDING(HttpStatus.CONFLICT, "이미 처리된 연결 요청입니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "일시적인 오류가 발생했습니다.");
 
     private final HttpStatus status;

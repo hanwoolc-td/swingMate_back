@@ -27,9 +27,6 @@ public class ProProfile {
     @Column(nullable = false)
     private String introduction;
 
-    @Column(nullable = false, unique = true)
-    private String proCode;
-
     @ElementCollection
     @CollectionTable(name = "pro_careers", joinColumns = @JoinColumn(name = "user_id"))
     @OrderColumn(name = "sort_order")
@@ -43,11 +40,9 @@ public class ProProfile {
     protected ProProfile() {
     }
 
-    public ProProfile(UUID userId, String introduction, String proCode, List<String> careers,
-                      List<AvailabilitySlot> availability) {
+    public ProProfile(UUID userId, String introduction, List<String> careers, List<AvailabilitySlot> availability) {
         this.userId = userId;
         this.introduction = introduction;
-        this.proCode = proCode;
         this.careers = new ArrayList<>(careers);
         this.availability = new ArrayList<>(availability);
     }
@@ -56,8 +51,12 @@ public class ProProfile {
         return userId;
     }
 
-    public String getProCode() {
-        return proCode;
+    public String getIntroduction() {
+        return introduction;
+    }
+
+    public List<String> getCareers() {
+        return careers;
     }
 
     @Embeddable

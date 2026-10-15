@@ -34,16 +34,20 @@ Swagger: http://localhost:8080/swagger-ui.html
 | `POST /phone-verifications` | 온보딩 토큰 | SMS 인증번호 발송·재발송(`previousVerificationId`). 1분 1회, 하루 5회 |
 | `POST /phone-verifications/{id}/confirm` | 온보딩 토큰 | 인증번호 확인. 3분 만료, 5회 실패 시 잠김. 성공하면 `verificationToken` |
 | `PUT /onboarding/member` | 온보딩 토큰 + `verificationToken` | 일반 회원 가입 완료, 로그인 토큰 발급 |
-| `PUT /onboarding/pro` | 온보딩 토큰 + `verificationToken` | 프로 가입 완료, 로그인 토큰과 `proCode` 발급 |
-| `POST /members/me/pro-connection` | 액세스 토큰(일반 회원) | 프로 코드로 프로와 연결. 여러 프로 연결 가능, 재요청은 멱등 |
+| `PUT /onboarding/pro` | 온보딩 토큰 + `verificationToken` | 프로 가입 완료, 로그인 토큰 발급 |
+| `POST /members/me/connection-code` | 액세스 토큰(회원) | 일회용 연결 코드 발급(5분, 1회용). 새로 받으면 이전 코드는 무효 |
+| `POST /pros/me/connections` | 액세스 토큰(프로) | 회원 코드 입력 → 연결 요청(대기). 승인 전에는 회원 이름만 보임 |
+| `GET /members/me/connections` | 액세스 토큰(회원) | 받은 요청(대기)·연결된 프로(연결 중), 프로 소개·경력 포함 |
+| `POST /members/me/connections/{id}/approve`, `/reject` | 액세스 토큰(회원) | 연결 요청 승인(연결 중) 또는 거절(종료) |
+| `GET /pros/me/connections` | 액세스 토큰(프로) | 보낸 요청(대기)·연결된 회원(연결 중) |
 
 ## 명세서 미확정 항목에 대해 임시로 정한 기본값
 
 - **SMS 발송**: 사업자 미정이라 실제 문자를 보내지 않고 `SMS_FAKE_CODE`(기본 `123456`)만 통과한다.
 - **휴대폰 번호 중복**: 한 번호는 한 계정만 쓸 수 있다(`PHONE_ALREADY_IN_USE`).
-- **프로 코드**: 헷갈리는 0/O, 1/I를 뺀 영문 대문자·숫자 6자리. 소문자로 입력해도 연결된다.
+- **회원 연결 코드**: 헷갈리는 0/O, 1/I를 뺀 영문 대문자·숫자 6자리, 5분 유효, 한 번만 사용. 소문자로 입력해도 된다. 앱은 같은 값을 QR로 보여준다.
 - **프로 활동**: 가입 즉시 활동 가능(관리자 승인 없음).
-- **회원-프로 연결**: 한 회원이 여러 프로와 연결할 수 있다(MVP 범위의 "복수 프로 연결").
+- **회원-프로 연결**: 기능 명세서 CONNECT-01 방식(회원 코드 표시 → 프로 입력 → 회원 승인). 한 회원이 여러 프로와 연결할 수 있다(MVP 범위의 "복수 프로 연결"). 거절된 프로도 새 코드로 다시 요청할 수 있다.
 - **가입 완료 재요청**: 같은 역할로 다시 요청하면 데이터는 그대로 두고 토큰만 새로 발급한다.
 
 ## 테스트

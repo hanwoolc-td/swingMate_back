@@ -17,7 +17,6 @@ import com.swingmate.user.Role;
 import com.swingmate.user.User;
 import com.swingmate.user.UserRepository;
 import com.swingmate.user.UserResponse;
-import java.security.SecureRandom;
 import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -39,9 +38,6 @@ public class OnboardingService {
     /** 한글 또는 영문 단어(공백 구분), 글자 수 2자 이상 */
     private static final Pattern NAME = Pattern.compile("[가-힣a-zA-Z]+( [가-힣a-zA-Z]+)*");
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
-    /** 헷갈리는 0/O, 1/I 제외 */
-    private static final String PRO_CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    private static final int PRO_CODE_LENGTH = 6;
     private static final int INTRODUCTION_MAX = 200;
     private static final int CAREER_MAX = 200;
     private static final int NAME_MAX = 50;
@@ -51,7 +47,6 @@ public class OnboardingService {
     private final ProProfileRepository proProfileRepository;
     private final JwtTokenProvider tokenProvider;
     private final AuthService authService;
-    private final SecureRandom random = new SecureRandom();
 
     public OnboardingService(UserRepository userRepository, MemberProfileRepository memberProfileRepository,
                              ProProfileRepository proProfileRepository, JwtTokenProvider tokenProvider,
@@ -94,7 +89,7 @@ public class OnboardingService {
 
         memberProfileRepository.save(new MemberProfile(userId, interests, request.golfExperience()));
         user.completeOnboarding(Role.MEMBER, name, phone.phoneNumber(), phone.verifiedAt());
-        return completed(user, null);
+        return completed(user);
     }
 
     @Transactional
@@ -116,10 +111,9 @@ public class OnboardingService {
         }
         List<AvailabilitySlot> availability = validateAvailability(request.availability());
 
-        ProProfile profile = proProfileRepository.save(
-                new ProProfile(userId, introduction, newProCode(), careers, availability));
+        proProfileRepository.save(new ProProfile(userId, introduction, careers, availability));
         user.completeOnboarding(Role.PRO, name, phone.phoneNumber(), phone.verifiedAt());
-        return completed(user, profile.getProCode());
+        return completed(user);
     }
 
     /** 가입 완료 요청 재시도는 같은 역할이면 새 토큰만 다시 발급한다(데이터 중복 생성 없음). */
@@ -127,15 +121,12 @@ public class OnboardingService {
         if (user.getRole() != role) {
             throw new ApiException(ErrorCode.ONBOARDING_ALREADY_COMPLETED);
         }
-        String proCode = role == Role.PRO
-                ? proProfileRepository.findById(user.getId()).map(ProProfile::getProCode).orElse(null)
-                : null;
-        return completed(user, proCode);
+        return completed(user);
     }
 
-    private OnboardingResponse completed(User user, String proCode) {
+    private OnboardingResponse completed(User user) {
         TokenResponse tokens = authService.issueTokens(user.getId());
-        return new OnboardingResponse(UserResponse.from(user), tokens.accessToken(), tokens.refreshToken(), proCode);
+        return new OnboardingResponse(UserResponse.from(user), tokens.accessToken(), tokens.refreshToken());
     }
 
     private VerifiedPhone verifiedPhone(UUID userId, String verificationToken, String rawPhoneNumber) {
@@ -217,20 +208,6 @@ public class OnboardingService {
         } catch (DateTimeParseException | NullPointerException e) {
             throw new ApiException(ErrorCode.AVAILABILITY_INVALID);
         }
-    }
-
-    private String newProCode() {
-        // 32^6 ≈ 10억 조합이라 충돌은 드물다. 동시 생성 충돌은 DB 유니크 제약이 막는다.
-        for (int attempt = 0; attempt < 10; attempt++) {
-            StringBuilder code = new StringBuilder(PRO_CODE_LENGTH);
-            for (int i = 0; i < PRO_CODE_LENGTH; i++) {
-                code.append(PRO_CODE_CHARS.charAt(random.nextInt(PRO_CODE_CHARS.length())));
-            }
-            if (!proProfileRepository.existsByProCode(code.toString())) {
-                return code.toString();
-            }
-        }
-        throw new IllegalStateException("프로 코드 생성 실패");
     }
 
     private User findUser(UUID userId) {
