@@ -6,7 +6,9 @@ SwingMate 앱의 Spring Boot 서버. 요구사항은 `swingMate_front/docs/backe
 
 ```bash
 docker compose up -d                 # PostgreSQL
-KAKAO_APP_ID=1610065 mvn spring-boot:run      # 실제 카카오 로그인
+KAKAO_APP_ID=1610065 \
+GOOGLE_CLIENT_IDS=32094329428-h878ssdsglmq287mqgsd2hg27o29d4ci.apps.googleusercontent.com,32094329428-ll77btq2abv13bmdqpcrsj279m3u3heb.apps.googleusercontent.com \
+  mvn spring-boot:run                          # 실제 카카오·Google 로그인
 OAUTH_MOCK_ENABLED=true mvn spring-boot:run   # 카카오·Google 없이 임의 토큰으로 로그인(개발 전용)
 ```
 
