@@ -45,6 +45,8 @@ public class SocialTokenVerifier {
                 case GOOGLE -> verifyGoogle(token);
             };
         } catch (HttpClientErrorException e) {
+            // 토큰 값은 남기지 않고 공급자와 응답 코드만 남긴다.
+            log.warn("{} 토큰 확인 거절: HTTP {}", provider, e.getStatusCode().value());
             throw invalid();
         } catch (RestClientException e) {
             // 공급자 서버 장애·타임아웃. 토큰은 로그에 남기지 않는다.
@@ -94,6 +96,9 @@ public class SocialTokenVerifier {
                 || !clientIds.contains(info.path("aud").asText())
                 || !GOOGLE_ISSUERS.contains(info.path("iss").asText())
                 || info.path("sub").asText().isEmpty()) {
+            // aud·iss는 비밀이 아니다. 설정한 클라이언트 ID와 다른지 확인하는 데 쓴다.
+            log.warn("Google 토큰 거절: aud={}, iss={}",
+                    info == null ? null : info.path("aud").asText(), info == null ? null : info.path("iss").asText());
             throw invalid();
         }
         String email = "true".equals(info.path("email_verified").asText()) ? textOrNull(info.path("email")) : null;
