@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/swingmate}
+    username: ${DB_USERNAME:swingmate}
+    password: ${DB_PASSWORD:swingmate}
+    hikari:
+      data-source-properties:
+        # 유니크 제약 위반 시 PostgreSQL 오류 상세가 로그에 찍히지 않게 한다.
+        logServerErrorDetail: false
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity: 1h
+  refresh-token-validity: 30d
+  onboarding-token-validity: 1h
+  verification-token-validity: 10m
+
+sms:
+  # SMS 사업자 연동 전까지 이 인증번호만 통과한다.
+  fake-code: ${SMS_FAKE_CODE:123456}
+
+oauth:
+  # false면 카카오/Google 서버에서 실제 토큰을 검증한다.
+  mock-enabled: ${OAUTH_MOCK_ENABLED:false}
+  kakao:
+    app-id: ${KAKAO_APP_ID}
+  google:
+    client-ids: ${GOOGLE_CLIENT_IDS}

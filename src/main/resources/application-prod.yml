@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      data-source-properties:
+        logServerErrorDetail: false
+
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-validity: 1h
+  refresh-token-validity: 30d
+  onboarding-token-validity: 1h
+  verification-token-validity: 10m
+
+sms:
+  fake-code: ${SMS_FAKE_CODE}
+
+oauth:
+  # 운영 환경에서는 개발용 Mock 로그인을 허용하지 않는다.
+  mock-enabled: false
+  kakao:
+    app-id: ${KAKAO_APP_ID}
+  google:
+    client-ids: ${GOOGLE_CLIENT_IDS}

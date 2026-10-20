@@ -5,25 +5,26 @@ SwingMate 앱의 Spring Boot 서버. 요구사항은 `swingMate_front/docs/backe
 ## 실행
 
 ```bash
-docker compose up -d                 # PostgreSQL
-KAKAO_APP_ID=1610065 \
-GOOGLE_CLIENT_IDS=32094329428-h878ssdsglmq287mqgsd2hg27o29d4ci.apps.googleusercontent.com,32094329428-ll77btq2abv13bmdqpcrsj279m3u3heb.apps.googleusercontent.com \
-  mvn spring-boot:run                          # 실제 카카오·Google 로그인
-OAUTH_MOCK_ENABLED=true mvn spring-boot:run   # 카카오·Google 없이 임의 토큰으로 로그인(개발 전용)
+cp .env.example .env       # 최초 1회: 로컬 값 작성
+docker compose up -d       # PostgreSQL
+./scripts/run-local.sh     # local 프로필 + 실제 카카오·Google 로그인
 ```
 
 Swagger: http://localhost:8080/swagger-ui.html
 
-`OAUTH_MOCK_ENABLED=true`면 카카오/Google을 호출하지 않고 `idToken` 문자열을 그대로 사용자 ID로 쓴다. 로컬 개발 전용이다.
+`application.yml`은 공통 설정, `application-local.yml`은 로컬 환경, `application-prod.yml`은 운영 환경을 담당한다. `.env`는 Git에서 제외되며 `scripts/run-local.sh`가 실행 전에 환경 변수로 불러온다.
+
+카카오·Google 없이 화면 흐름만 확인하려면 `.env`의 `OAUTH_MOCK_ENABLED=true`으로 바꾸고 프론트를 `DEV_SOCIAL_LOGIN=true`로 실행한다. 실제 로그인 테스트에서는 둘 다 `false`로 둔다.
 
 ## 환경 변수
 
 | 이름 | 설명 |
 | --- | --- |
-| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL 접속 정보 (기본값은 `compose.yml`과 같음) |
-| `JWT_SECRET` | JWT 서명 키, 32바이트 이상. 운영에서는 반드시 설정 |
+| `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | PostgreSQL 접속 정보 |
+| `JWT_SECRET` | JWT 서명 키, 32바이트 이상. 모든 환경에서 반드시 설정 |
 | `KAKAO_APP_ID` | 카카오 앱 ID(숫자). 다른 앱의 토큰을 거부하는 데 쓴다 |
 | `GOOGLE_CLIENT_IDS` | 앱의 Google OAuth 클라이언트 ID 목록(쉼표 구분) |
+| `OAUTH_MOCK_ENABLED` | `true`면 소셜 토큰 검증을 생략하는 로컬 개발 전용 모드 |
 
 ## 구현된 API (`/api/v1`)
 
