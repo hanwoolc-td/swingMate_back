@@ -13,7 +13,9 @@ public final class AuthDtos {
     }
 
     /** 카카오는 Access Token, Google은 ID Token을 idToken에 담아 보낸다. */
-    public record SocialLoginRequest(@NotNull SocialProvider provider, @NotBlank String idToken) {
+    public record SocialLoginRequest(@NotNull SocialProvider provider, @NotBlank String idToken,
+                                     String deviceId,
+                                     String deviceName, String platform, String appVersion) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -31,5 +33,10 @@ public final class AuthDtos {
     }
 
     public record TokenResponse(String accessToken, String refreshToken) {
+    }
+
+    public record DeviceSessionResponse(String id, String deviceName, String platform, String appVersion,
+                                        java.time.Instant createdAt, java.time.Instant lastUsedAt,
+                                        boolean current) {
     }
 }

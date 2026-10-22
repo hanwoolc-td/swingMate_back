@@ -8,6 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,6 +126,88 @@ class AuthFlowTest {
                         .content("{\"provider\":\"NAVER\",\"idToken\":\"x\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void deviceSessionSurvivesRefreshAndRevocationImmediatelyBlocksAccess() throws Exception {
+        String googleId = "session-" + UUID.randomUUID();
+        completeOnboarding(json(login("GOOGLE", googleId)));
+        String deviceId = UUID.randomUUID().toString();
+        JsonNode firstLogin = loginWithDevice(googleId, deviceId);
+        JsonNode loggedIn = loginWithDevice(googleId, deviceId);
+        mvc.perform(get("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + firstLogin.path("accessToken").asText()))
+                .andExpect(status().isUnauthorized());
+        String accessToken = loggedIn.path("accessToken").asText();
+        String refreshToken = loggedIn.path("refreshToken").asText();
+
+        JsonNode sessions = json(mvc.perform(get("/api/v1/auth/sessions")
+                        .header("Authorization", "Bearer " + accessToken))
+                .andExpect(status().isOk()));
+        org.junit.jupiter.api.Assertions.assertEquals(2, sessions.size());
+        org.junit.jupiter.api.Assertions.assertEquals(1, jdbc.queryForObject(
+                "select count(*) from refresh_tokens where device_id = ?",
+                Integer.class, UUID.fromString(deviceId)));
+        JsonNode currentSession = null;
+        for (JsonNode item : sessions) if (item.path("current").asBoolean()) currentSession = item;
+        org.junit.jupiter.api.Assertions.assertNotNull(currentSession);
+        org.junit.jupiter.api.Assertions.assertEquals("Pixel 9", currentSession.path("deviceName").asText());
+        String sessionId = currentSession.path("id").asText();
+
+        JsonNode rotated = json(refresh(refreshToken).andExpect(status().isOk()));
+        JsonNode afterRefresh = json(mvc.perform(get("/api/v1/auth/sessions")
+                        .header("Authorization", "Bearer " + rotated.path("accessToken").asText()))
+                .andExpect(status().isOk()));
+        JsonNode currentAfterRefresh = null;
+        for (JsonNode item : afterRefresh) if (item.path("current").asBoolean()) currentAfterRefresh = item;
+        org.junit.jupiter.api.Assertions.assertNotNull(currentAfterRefresh);
+        org.junit.jupiter.api.Assertions.assertEquals(sessionId, currentAfterRefresh.path("id").asText());
+
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete("/api/v1/auth/sessions/{id}", sessionId)
+                        .header("Authorization", "Bearer " + rotated.path("accessToken").asText()))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/users/me")
+                        .header("Authorization", "Bearer " + rotated.path("accessToken").asText()))
+                .andExpect(status().isUnauthorized());
+        refresh(rotated.path("refreshToken").asText()).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void concurrentLoginOnSameDeviceLeavesOneSession() throws Exception {
+        String googleId = "concurrent-session-" + UUID.randomUUID();
+        completeOnboarding(json(login("GOOGLE", googleId)));
+        String deviceId = UUID.randomUUID().toString();
+        var start = new CountDownLatch(1);
+        var executor = Executors.newFixedThreadPool(2);
+
+        try {
+            var first = executor.submit(() -> {
+                start.await();
+                return loginWithDevice(googleId, deviceId);
+            });
+            var second = executor.submit(() -> {
+                start.await();
+                return loginWithDevice(googleId, deviceId);
+            });
+            start.countDown();
+            first.get(10, TimeUnit.SECONDS);
+            second.get(10, TimeUnit.SECONDS);
+
+            org.junit.jupiter.api.Assertions.assertEquals(1, jdbc.queryForObject(
+                    "select count(*) from refresh_tokens where device_id = ?",
+                    Integer.class, UUID.fromString(deviceId)));
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private JsonNode loginWithDevice(String googleId, String deviceId) throws Exception {
+        return json(mvc.perform(post("/api/v1/auth/social/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"provider\":\"GOOGLE\",\"idToken\":\"" + googleId
+                                + "\",\"deviceId\":\"" + deviceId
+                                + "\",\"deviceName\":\"Pixel 9\",\"platform\":\"ANDROID\",\"appVersion\":\"1.0.0\"}"))
+                .andExpect(status().isOk()));
     }
 
     private ResultActions login(String provider, String token) throws Exception {

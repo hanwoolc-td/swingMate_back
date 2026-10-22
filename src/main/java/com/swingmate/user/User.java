@@ -54,6 +54,11 @@ public class User {
         this.role = role;
     }
 
+    /** 가입 미완료 사용자의 정리 유예 기간을 가입 활동 시점부터 계산한다. */
+    public void recordOnboardingActivity() {
+        this.updatedAt = Instant.now();
+    }
+
     public void completeOnboarding(Role role, String name, String phoneNumber, Instant phoneVerifiedAt) {
         this.role = role;
         this.name = name;

@@ -16,7 +16,11 @@ public final class OnboardingDtos {
             String name,
             String phoneNumber,
             Set<LessonInterest> lessonInterests,
-            GolfExperience golfExperience
+            GolfExperience golfExperience,
+            String deviceId,
+            String deviceName,
+            String platform,
+            String appVersion
     ) {
     }
 
@@ -26,7 +30,11 @@ public final class OnboardingDtos {
             String phoneNumber,
             String introduction,
             List<String> careers,
-            List<DayAvailability> availability
+            List<DayAvailability> availability,
+            String deviceId,
+            String deviceName,
+            String platform,
+            String appVersion
     ) {
     }
 

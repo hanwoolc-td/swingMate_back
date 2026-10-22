@@ -72,7 +72,7 @@ public class OnboardingService {
     public OnboardingResponse completeMember(UUID userId, MemberOnboardingRequest request) {
         User user = findUser(userId);
         if (user.isOnboardingCompleted()) {
-            return alreadyCompleted(user, Role.MEMBER);
+            return alreadyCompleted(user, Role.MEMBER, request.deviceId(), request.deviceName(), request.platform(), request.appVersion());
         }
         String name = validateName(request.name());
         VerifiedPhone phone = verifiedPhone(userId, request.verificationToken(), request.phoneNumber());
@@ -89,14 +89,14 @@ public class OnboardingService {
 
         memberProfileRepository.save(new MemberProfile(userId, interests, request.golfExperience()));
         user.completeOnboarding(Role.MEMBER, name, phone.phoneNumber(), phone.verifiedAt());
-        return completed(user);
+        return completed(user, request.deviceId(), request.deviceName(), request.platform(), request.appVersion());
     }
 
     @Transactional
     public OnboardingResponse completePro(UUID userId, ProOnboardingRequest request) {
         User user = findUser(userId);
         if (user.isOnboardingCompleted()) {
-            return alreadyCompleted(user, Role.PRO);
+            return alreadyCompleted(user, Role.PRO, request.deviceId(), request.deviceName(), request.platform(), request.appVersion());
         }
         String name = validateName(request.name());
         VerifiedPhone phone = verifiedPhone(userId, request.verificationToken(), request.phoneNumber());
@@ -113,19 +113,21 @@ public class OnboardingService {
 
         proProfileRepository.save(new ProProfile(userId, introduction, careers, availability));
         user.completeOnboarding(Role.PRO, name, phone.phoneNumber(), phone.verifiedAt());
-        return completed(user);
+        return completed(user, request.deviceId(), request.deviceName(), request.platform(), request.appVersion());
     }
 
     /** 가입 완료 요청 재시도는 같은 역할이면 새 토큰만 다시 발급한다(데이터 중복 생성 없음). */
-    private OnboardingResponse alreadyCompleted(User user, Role role) {
+    private OnboardingResponse alreadyCompleted(User user, Role role, String deviceId, String deviceName,
+                                                String platform, String appVersion) {
         if (user.getRole() != role) {
             throw new ApiException(ErrorCode.ONBOARDING_ALREADY_COMPLETED);
         }
-        return completed(user);
+        return completed(user, deviceId, deviceName, platform, appVersion);
     }
 
-    private OnboardingResponse completed(User user) {
-        TokenResponse tokens = authService.issueTokens(user.getId());
+    private OnboardingResponse completed(User user, String deviceId, String deviceName,
+                                         String platform, String appVersion) {
+        TokenResponse tokens = authService.issueTokens(user.getId(), deviceId, deviceName, platform, appVersion);
         return new OnboardingResponse(UserResponse.from(user), tokens.accessToken(), tokens.refreshToken());
     }
 

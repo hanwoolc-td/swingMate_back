@@ -72,6 +72,7 @@ public class PhoneVerificationService {
         String code = fakeCode;
         PhoneVerification verification = verificationRepository.save(new PhoneVerification(
                 id, userId, phoneNumber, purpose, hash(id, code), now, now.plus(CODE_VALIDITY), resendCount));
+        recordOnboardingActivity(userId);
 
         return new SendResult(verification.getId(), verification.getExpiresAt(),
                 CODE_VALIDITY.toSeconds(), now.plus(RESEND_INTERVAL));
@@ -82,6 +83,7 @@ public class PhoneVerificationService {
     public ConfirmResult confirm(UUID userId, UUID verificationId, String code) {
         PhoneVerification verification = findOwned(userId, verificationId);
         Instant now = Instant.now();
+        recordOnboardingActivity(userId);
 
         if (verification.isVerified()) {
             throw new ApiException(ErrorCode.PHONE_ALREADY_VERIFIED);
@@ -109,6 +111,10 @@ public class PhoneVerificationService {
         return verificationRepository.findById(verificationId)
                 .filter(v -> v.getUserId().equals(userId))
                 .orElseThrow(() -> new ApiException(ErrorCode.VERIFICATION_NOT_FOUND));
+    }
+
+    private void recordOnboardingActivity(UUID userId) {
+        userRepository.findById(userId).ifPresent(user -> user.recordOnboardingActivity());
     }
 
     /** 인증번호 원문은 저장하지 않는다. 인증 ID를 섞어 같은 번호라도 해시가 달라지게 한다. */

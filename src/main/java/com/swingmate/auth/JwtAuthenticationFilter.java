@@ -24,9 +24,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String ONBOARDING_AUTHORITY = "TOKEN_ONBOARDING";
 
     private final JwtTokenProvider tokenProvider;
+    private final RefreshTokenRepository refreshTokenRepository;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, RefreshTokenRepository refreshTokenRepository) {
         this.tokenProvider = tokenProvider;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Override
@@ -37,7 +39,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             tokenProvider.parse(token, TokenType.ACCESS)
                     .ifPresentOrElse(
-                            parsed -> authenticate(parsed, ACCESS_AUTHORITY),
+                            parsed -> {
+                                boolean active = refreshTokenRepository.findById(parsed.sessionId())
+                                        .filter(row -> row.belongsTo(parsed.userId()))
+                                        .filter(row -> row.getExpiresAt().isAfter(java.time.Instant.now()))
+                                        .isPresent();
+                                if (active) authenticate(parsed, ACCESS_AUTHORITY);
+                            },
                             () -> tokenProvider.parse(token, TokenType.ONBOARDING)
                                     .ifPresent(parsed -> authenticate(parsed, ONBOARDING_AUTHORITY)));
         }
